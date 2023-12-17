@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct SpringRow {
     springs: Vec<char>,
     damaged_groups: Vec<usize>
@@ -18,7 +18,7 @@ fn is_group_possible(springs: &Vec<char>, group: usize) -> bool {
 }
 
 impl SpringRow {
-    fn new(springs: &[char], damaged_groups: &[usize]) -> self {
+    fn new(springs: &[char], damaged_groups: &[usize]) -> Self {
         Self {
             springs: springs.into(),
             damaged_groups: damaged_groups.into()
@@ -46,46 +46,46 @@ impl SpringRow {
 
     fn count_possible_combinations(&self, lookup_table: &mut HashMap<Self, u64>) -> u64 {
         if lookup_table.contains_key(self) {
-            return lookup_table[input];
+            return lookup_table[self];
         }
         let mut combinations = 0;
         let mut damaged_found = false;
         if self.damaged_groups.len() == 0 {
             if self.springs.contains(&'#') {
-                lookup_table.insert(input.clone(), 0);
+                lookup_table.insert(self.clone(), 0);
                 return 0;
             }
             else {
-                lookup_table.insert(input.clone(), 1);
+                lookup_table.insert(self.clone(), 1);
                 return 1;
             }
         }
         let first_group = self.damaged_groups[0];
-        let required_length = (self.damaged_groups.iter().sum::<usize>() + damaged_groups.len() - 1) as i32;
+        let required_length = (self.damaged_groups.iter().sum::<usize>() + self.damaged_groups.len() - 1) as i32;
         let mut current_length = self.springs.len() as i32;
         let mut i = 0;
         while current_length >= required_length {
-            match springs[i] {
+            match self.springs[i] {
                 '#' => {
                     damaged_found = true;
                     if is_group_possible(&self.springs[i..].into(), first_group) {
                             combinations += if self.damaged_groups.len() > 1 {
-                            count_possible_combinations(&SpringRow::new(&self.springs[i + first_group + 1..], &self.damaged_groups[1..]), lookup_table)
+                                SpringRow::new(&self.springs[i + first_group + 1..], &self.damaged_groups[1..]).count_possible_combinations(lookup_table)
                         } else if current_length as usize == first_group || current_length as usize == first_group + 1{
                             1
                         } else {
-                            count_possible_combinations(&(springs[i + first_group + 1..].into(), vec![]), lookup_table)
+                            SpringRow::new(self.springs[i + first_group + 1..].into(), &vec![]).count_possible_combinations(lookup_table)
                         }
                     }
                 },
                 '?' => {
                     if is_group_possible(&self.springs[i..].into(), first_group) {
                             combinations += if self.damaged_groups.len() > 1 {
-                            count_possible_combinations(&SpringRow::new(&self.springs[i + first_group + 1..], &self.damaged_groups[1..]), lookup_table)
+                                SpringRow::new(&self.springs[i + first_group + 1..], &self.damaged_groups[1..]).count_possible_combinations(lookup_table)
                         } else if current_length as usize == first_group || current_length as usize == first_group + 1{
                             1
                         } else {
-                            count_possible_combinations(&(springs[i + first_group + 1..].into(), vec![]), lookup_table)
+                            SpringRow::new(self.springs[i + first_group + 1..].into(), &vec![]).count_possible_combinations(lookup_table)
                         }
                     }
                 },
@@ -113,10 +113,10 @@ fn solve_part_1(spring_rows: &Vec<SpringRow>) -> u64 {
 
 fn solve_part_2(spring_rows: &mut Vec<SpringRow>) -> u64 {
     let mut result = 0;
-    let mut lookup_table = HashMap::<(Vec<char>, Vec<usize>), u64>::new();
-    for (i, spring_row) in spring_rows.iter_mut().enumerate() {
+    let mut lookup_table = HashMap::<SpringRow, u64>::new();
+    for spring_row in spring_rows {
         spring_row.unfold(5);
-        result += spring_row.count_possible_combinations(&mut lookup_table);;
+        result += spring_row.count_possible_combinations(&mut lookup_table);
     }
     result
 }
